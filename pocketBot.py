@@ -38,11 +38,11 @@ class pocketBot():
         next.click()
 
     # select gold commodities
-    def selectCommodities(self):
+    def selectGold(self):
         rotate = self.driver.find_element_by_xpath('//*[@id="bar-chart"]/div/div/div[1]/div/div[1]/div[1]/div/a/div/i')
         rotate.click()
 
-        commodities = self.driver.find_element_by_xpath('//*[@id="quotes-list"]/div[1]/ul/li[5]/a')
+        commodities = self.driver.find_element_by_xpath('//*[@id="quotes-list"]/div[1]/ul/li[5]')
         commodities.click()
 
         gold = self.driver.find_element_by_xpath('//*[@id="quotes-list"]/div[2]/div[1]/div/div[2]/div[2]/a')
@@ -50,21 +50,34 @@ class pocketBot():
         
         close = self.driver.find_element_by_xpath('//*[@id="modal-root"]/div[7]')
         close.click()
-         
+    
+    def selectAppleStock(self):
+        rotate = self.driver.find_element_by_xpath('//*[@id="bar-chart"]/div/div/div[1]/div/div[1]/div[1]/div/a/div/i')
+        rotate.click()
+
+        stock = self.driver.find_element_by_xpath('////*[@id="quotes-list"]/div[1]/ul/li[6]')
+        stock.click()
+
+        apple = self.driver.find_element_by_xpath('//*[@id="quotes-list"]/div[2]/div[1]/div/div[1]/div[1]')
+        apple.click()
+
+        close = self.driver.find_element_by_xpath('//*[@id="modal-root"]/div[7]')
+        close.click()
+
     #buy higher price
-    def buyHigher(self):
-        buy = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[5]/a')
-        buy.click()
+    def buyHigherButton(self):
+        return self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[5]/a')
+        #buy.click()
 
     # buy lower price
-    def buyLower(self):
-        #fix this xpath
-        sell = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[1]/a/span/span/span[1]')
-        sell.click()
+    def buyLowerButton(self):
+        
+        return self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[1]/a')
+        #sell.click()
 
     #get current second
     def getCurrentSecond(self):
-        time = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[2]/div[2]/div/div[1]/div[2]')
+        time = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[2]/div[2]/div/div[1]/div/div[2]')
         #get current time (in M1)
         time_number = time.get_attribute("innerHTML")
         time_number = time_number[3:5]
@@ -109,7 +122,8 @@ class pocketBot():
         print('login')
         sleep(10)
 
-        #self.selectCommodities()
+        self.selectGold()
+        #self.selectAppleStock()
         print('select commodities')
         sleep(5)
         cur_sec = self.getCurrentSecond()
@@ -127,38 +141,65 @@ class pocketBot():
                 continue
             cur_sec = self.getCurrentSecond()
             print('cur_sec:',cur_sec)
-            if(cur_sec > 10 and cur_sec < 30):
-                sleep(cur_sec-10)
-            time = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[2]/div[2]/div/div[1]/div[2]')
+            if(cur_sec > 30):
+                sleep(cur_sec - 30)
+                cur_sec = self.getCurrentSecond()            
+
+            #fix time until it goes to between 30 - 10 before sleep
+            #7 second analysis
+            if(cur_sec > 7 and cur_sec <= 30):
+                sleep(cur_sec-7)
+            time = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[2]/div[2]/div/div[1]/div/div[2]')
             price = self.driver.find_element_by_xpath('//*[@id="put-call-buttons-chart-1"]/div/div[4]/div[2]/div/div[1]/div')
             decision = analitic.decide(price,time)
             print('done analyze, decision = ', decision)
+            sleep(1)
             if(decision == 0): continue
+            buy = self.buyHigherButton()
+            sell = self.buyLowerButton()
             
-            sleep(1.5)
             cur_sec = self.getCurrentSecond()
             cur_price = self.getCurrentPrice()
             #prev_price = self.getCurrentPrice()
             lowest_price = self.getCurrentPrice()
             highest_price = self.getCurrentPrice()
+            transaction = 0
             print('cur sec: ',cur_sec,'cur_price: ' ,cur_price)
-            while(cur_sec > 30):
+            
+            while(cur_sec > 30 and transaction < 5 ):
+                
                 if(decision == 1):
-                    if(cur_price < lowest_price):
-                        self.buyHigher()
+                    if(transaction == 0):
+                        buy.click()
                         lowest_price = copy.deepcopy(cur_price)
+                        transaction += 1
+                        print('buy')
+                    if(cur_price < lowest_price):
+                        buy.click()
+                        lowest_price = copy.deepcopy(cur_price)
+                        transaction += 1
                         print('buy')
                 
                 if(decision == -1):
-                    if(cur_price > highest_price):
-                        self.buyLower()
+                    if(transaction == 0):
+                        sell.click()
                         highest_price = copy.deepcopy(cur_price)
+                        transaction += 1
+                        print('sell')
+
+                    if(cur_price > highest_price):
+                        sell.click()
+                        highest_price = copy.deepcopy(cur_price)
+                        transaction += 1
                         print('sell')
                 
                 #prev_price = cur_price
                 sleep(0.8)
                 cur_sec = self.getCurrentSecond()
                 cur_price = self.getCurrentPrice()
+
+            print("out of buying phase")    
+    
 
 
 bot = pocketBot()
