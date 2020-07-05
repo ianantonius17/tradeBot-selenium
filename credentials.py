@@ -1,2 +1,2 @@
-user_email = 'test'
-user_pwd = '1234'
+user_email = 'te'
+user_pwd = '123'
